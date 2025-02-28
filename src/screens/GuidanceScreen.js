@@ -1,103 +1,80 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator, StyleSheet, Image, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import BibleApi from '../api/bibleLocalAPI';
 import { guidanceTopics } from '../data/guidanceTopics';
+import { useNavigation } from '@react-navigation/native';
 
 // IMPORTANT: Replace this with your actual OpenAI API key
 // In a production app, you would use a more secure method to store this
 const OPENAI_API_KEY = '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';
 
-const GuidanceScreen = ({ navigation }) => {
+// Updated URL - ensure this points to your deployed Vercel API
+const API_URL = 'https://bible-api-proxy.vercel.app/api/bible-guidance';
+
+const GuidanceScreen = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  const [guidance, setGuidance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigation = useNavigation();
   
-  const handleSubmit = async () => {
-    if (!query.trim()) return;
-    
+  const getGuidance = async () => {
+    if (!query.trim()) {
+      Alert.alert('Please enter a question or topic');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
     try {
-      // Call the OpenAI API
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content: "You are a biblical guidance assistant for a Reina-Valera Spanish Bible app. When the user asks a question or describes a problem, provide 3-5 Bible verses that address their situation. Format your response as a JSON object with a 'verses' array containing objects with 'reference' (e.g., 'Juan 3:16'), 'text' (the verse text in Spanish), and 'reason' (brief explanation in English of why this verse is relevant). Use Spanish verse references."
-            },
-            {
-              role: "user",
-              content: query
-            }
-          ],
-          response_format: { type: "json_object" }
+      console.log('Sending request to:', API_URL);
+      console.log('Query:', query);
+      
+      const response = await axios.post(API_URL, {
+        query: query.trim()
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+        timeout: 30000 // Increase timeout to 30 seconds
+      });
       
-      // Parse JSON response
-      const aiResponse = JSON.parse(response.data.choices[0].message.content);
-      console.log("AI Response:", aiResponse);
+      console.log('API Response:', response.data);
       
-      const verses = aiResponse.verses || [];
-      setResults(verses);
-    } catch (error) {
-      console.error('Guidance error:', error);
-      
-      // Check if it's a rate limit error (429)
-      if (error.response && error.response.status === 429) {
-        // Fall back to local guidance on rate limit
+      if (response.data && response.data.choices && response.data.choices[0]) {
         try {
-          const matchingTopics = guidanceTopics.filter(topic => {
-            return topic.topic.toLowerCase().includes(query.toLowerCase()) || 
-                   topic.keywords.some(keyword => 
-                     query.toLowerCase().includes(keyword.toLowerCase())
-                   );
+          // Parse the content if it's in JSON format
+          const content = response.data.choices[0].message.content;
+          const parsedContent = JSON.parse(content);
+          setGuidance(parsedContent);
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          // If parsing fails, use the raw content
+          setGuidance({
+            verses: [{
+              reference: "Error",
+              text: "Could not parse the response. Please try again."
+            }]
           });
-          
-          if (matchingTopics.length > 0) {
-            // Use curated verses from the matching topic
-            setResults(matchingTopics[0].verses);
-            setError('OpenAI API rate limit reached. Using local guidance instead.');
-            return;
-          } else {
-            // Fall back to Bible API search
-            const searchResults = await BibleApi.searchBible(query);
-            
-            // Transform search results to match our format
-            const formattedResults = (searchResults.verses || []).slice(0, 5).map(verse => ({
-              reference: verse.reference,
-              text: verse.text,
-              reason: "Found based on keyword search"
-            }));
-            
-            setResults(formattedResults);
-            setError('OpenAI API rate limit reached. Using Bible search instead.');
-            return;
-          }
-        } catch (fallbackError) {
-          console.error('Fallback guidance error:', fallbackError);
         }
-        
-        setError('OpenAI API rate limit reached. Please try again later or contact support.');
       } else {
-        setError('Error finding guidance. Please try again.');
+        setError('Unexpected response format. Please try again.');
       }
+    } catch (err) {
+      console.error('Guidance error:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      setError('Error finding guidance. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setError(null);
+    setGuidance(null);
   };
   
   const parseVerseReference = (reference) => {
@@ -220,212 +197,171 @@ const GuidanceScreen = ({ navigation }) => {
     return { bookId, chapter, verse: verseNum };
   };
   
-  const navigateToVerse = (verse) => {
-    if (!verse.reference) return;
-    
-    // Parse the verse reference
-    const parsedVerse = parseVerseReference(verse.reference);
-    
-    if (parsedVerse.bookId && parsedVerse.chapter) {
-      navigation.navigate('BibleReader', {
-        book: parsedVerse.bookId,
-        chapter: parsedVerse.chapter,
-        verse: parsedVerse.verse
-      });
-    }
+  const navigateToVerse = (reference) => {
+    // Navigate to the verse detail screen
+    navigation.navigate('VerseDetail', { reference });
   };
   
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1499566727020-9e74997c16e4?q=80&w=2070' }} 
-          style={styles.headerImage}
-        />
-        <View style={styles.overlay}>
-          <Text style={styles.headerText}>AI Biblical Guidance</Text>
-        </View>
+        <Text style={styles.title}>AI Biblical Guidance</Text>
       </View>
       
-      <ScrollView style={styles.contentContainer}>
-        <View style={styles.questionContainer}>
-          <Text style={styles.questionLabel}>What are you seeking guidance about?</Text>
+      {!guidance && !loading && !error && (
+        <View style={styles.form}>
+          <Text style={styles.label}>What are you seeking guidance about?</Text>
           <TextInput
-            style={styles.questionInput}
+            style={styles.input}
             value={query}
             onChangeText={setQuery}
-            placeholder="Example: How to deal with anxiety?"
+            placeholder="Enter your question or concern..."
             multiline
-            numberOfLines={3}
           />
           <TouchableOpacity 
-            style={styles.submitButton}
-            onPress={handleSubmit}
+            style={styles.button}
+            onPress={getGuidance}
           >
-            <Text style={styles.submitButtonText}>Ask AI for Biblical Guidance</Text>
+            <Text style={styles.buttonText}>Ask AI for Biblical Guidance</Text>
           </TouchableOpacity>
         </View>
-        
-        {loading ? (
-          <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color="#3498db" />
-            <Text style={styles.loaderText}>Consultando la Palabra de Dios...</Text>
+      )}
+      
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3498db" />
+          <Text style={styles.loadingText}>Finding relevant guidance...</Text>
+        </View>
+      )}
+      
+      {error && (
+        <View style={styles.errorContainer}>
+          <View style={styles.errorIcon}>
+            <Text style={styles.errorIconText}>!</Text>
           </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={50} color="#e74c3c" />
-            <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={resetForm}
+          >
+            <Text style={styles.retryButtonText}>Intentar de nuevo</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {guidance && !loading && (
+        <View style={styles.resultsContainer}>
+          <Text style={styles.resultsTitle}>Biblical Guidance</Text>
+          
+          {guidance.verses && guidance.verses.map((verse, index) => (
             <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={handleSubmit}
+              key={index}
+              style={styles.verseCard}
+              onPress={() => navigateToVerse(verse.reference)}
             >
-              <Text style={styles.retryButtonText}>Intentar de nuevo</Text>
+              <Text style={styles.verseReference}>{verse.reference}</Text>
+              <Text style={styles.verseText}>{verse.text}</Text>
             </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            {results.length > 0 ? (
-              <View style={styles.resultsContainer}>
-                <Text style={styles.resultsTitle}>Versículos para tu situación:</Text>
-                {results.map((item, index) => (
-                  <TouchableOpacity 
-                    key={`verse-${index}`}
-                    style={styles.resultItem}
-                    onPress={() => navigateToVerse(item)}
-                  >
-                    <Text style={styles.verseReference}>{item.reference}</Text>
-                    <Text style={styles.verseText}>{item.text}</Text>
-                    <View style={styles.reasonContainer}>
-                      <Text style={styles.reasonLabel}>Por qué esto ayuda:</Text>
-                      <Text style={styles.reasonText}>{item.reason}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : query.length > 0 ? (
-              <Text style={styles.emptyText}>No se encontró orientación. Intenta otra consulta.</Text>
-            ) : (
-              <View style={styles.initialStateContainer}>
-                <Ionicons name="book-outline" size={80} color="#3498db" />
-                <Text style={styles.initialStateText}>
-                  Haz una pregunta para recibir orientación bíblica
-                </Text>
-                <Text style={styles.sampleQuestionsTitle}>Ejemplos de preguntas:</Text>
-                <View style={styles.sampleQuestions}>
-                  <TouchableOpacity
-                    style={styles.sampleQuestion}
-                    onPress={() => setQuery("¿Cómo manejar la ansiedad?")}
-                  >
-                    <Text style={styles.sampleQuestionText}>¿Cómo manejar la ansiedad?</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sampleQuestion}
-                    onPress={() => setQuery("¿Qué dice la Biblia sobre el perdón?")}
-                  >
-                    <Text style={styles.sampleQuestionText}>¿Qué dice sobre el perdón?</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.sampleQuestion}
-                    onPress={() => setQuery("Versículos para momentos difíciles")}
-                  >
-                    <Text style={styles.sampleQuestionText}>Versículos para momentos difíciles</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
-    </View>
+          ))}
+          
+          {guidance.reflection && (
+            <View style={styles.reflectionCard}>
+              <Text style={styles.reflectionTitle}>Reflection</Text>
+              <Text style={styles.reflectionText}>{guidance.reflection}</Text>
+            </View>
+          )}
+          
+          <TouchableOpacity 
+            style={styles.newQueryButton}
+            onPress={resetForm}
+          >
+            <Text style={styles.newQueryButtonText}>New Question</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f5f5f5',
   },
   header: {
-    height: 150,
-    position: 'relative',
-  },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: '#666',
+    padding: 16,
     alignItems: 'center',
   },
-  headerText: {
-    color: 'white',
-    fontSize: 24,
+  title: {
+    fontSize: 20,
     fontWeight: 'bold',
+    color: 'white',
   },
-  contentContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  questionContainer: {
+  form: {
+    margin: 16,
     backgroundColor: 'white',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 16,
-    marginBottom: 20,
-    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    shadowRadius: 1.41,
+    elevation: 2,
   },
-  questionLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
   },
-  questionInput: {
+  input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 5,
+    borderRadius: 4,
     padding: 12,
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  submitButton: {
+  button: {
     backgroundColor: '#3498db',
-    paddingVertical: 12,
-    borderRadius: 5,
-    marginTop: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    borderRadius: 4,
+    padding: 16,
     alignItems: 'center',
+    marginTop: 16,
   },
-  submitButtonText: {
+  buttonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
-  loaderContainer: {
-    padding: 40,
+  loadingContainer: {
+    margin: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
   },
-  loaderText: {
+  loadingText: {
+    marginTop: 16,
     fontSize: 16,
-    color: '#777',
-    marginTop: 15,
+    color: '#666',
   },
   errorContainer: {
-    padding: 40,
+    margin: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorIconText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
   },
   errorText: {
     color: '#e74c3c',
@@ -445,7 +381,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   resultsContainer: {
-    marginTop: 10,
+    margin: 16,
   },
   resultsTitle: {
     fontSize: 18,
@@ -453,7 +389,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#333',
   },
-  resultItem: {
+  verseCard: {
     backgroundColor: 'white',
     borderRadius: 8,
     padding: 16,
@@ -478,60 +414,42 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 15,
   },
-  reasonContainer: {
-    backgroundColor: '#f5f9ff',
-    padding: 10,
-    borderRadius: 5,
+  reflectionCard: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
-  reasonLabel: {
-    fontSize: 14,
+  reflectionTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#3498db',
-    marginBottom: 5,
+    marginBottom: 10,
   },
-  reasonText: {
+  reflectionText: {
     fontSize: 14,
     color: '#555',
     fontStyle: 'italic',
   },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    color: '#777',
-  },
-  initialStateContainer: {
-    alignItems: 'center',
-    marginTop: 30,
-    paddingHorizontal: 20,
-  },
-  initialStateText: {
-    fontSize: 18,
-    textAlign: 'center',
-    color: '#555',
+  newQueryButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 12,
+    borderRadius: 5,
     marginTop: 15,
-    marginBottom: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sampleQuestionsTitle: {
+  newQueryButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
-    alignSelf: 'flex-start',
-  },
-  sampleQuestions: {
-    width: '100%',
-  },
-  sampleQuestion: {
-    backgroundColor: '#f0f7ff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#3498db',
-  },
-  sampleQuestionText: {
-    fontSize: 15,
-    color: '#333',
+    textAlign: 'center',
   },
 });
 
