@@ -1,171 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import BibleVerse from '../components/BibleVerse';
-import BibleApi from '../api/bibleLocalAPI';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Share,
+  ActivityIndicator
+} from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const VerseDetailScreen = ({ route, navigation }) => {
   const { reference } = route.params;
-  const [verse, setVerse] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [verse, setVerse] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
-    fetchVerseDetails();
-    checkIfBookmarked();
-  }, [reference]);
+    // Set the screen title to the verse reference
+    navigation.setOptions({
+      title: reference,
+    });
 
-  const fetchVerseDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Parse the reference to get book, chapter, verse
-      const parts = reference.split(' ');
-      const bookName = parts[0];
-      
-      if (parts.length >= 2) {
-        const chapterVerse = parts[1].split(':');
-        const chapter = parseInt(chapterVerse[0]);
-        const verseNum = chapterVerse.length > 1 ? parseInt(chapterVerse[1]) : 1;
-        
-        // Get verse data from your Bible API
-        // This is a placeholder - implement your actual API call
-        const verseData = await BibleApi.getVerse(bookName, chapter, verseNum);
-        setVerse(verseData);
-      }
-    } catch (err) {
-      console.error('Error fetching verse:', err);
-      setError('Failed to load verse details');
-    } finally {
+    // Simulate loading verse data
+    setTimeout(() => {
+      setVerse({
+        reference: reference,
+        text: reference === 'Juan 3:16' 
+          ? '"Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna."'
+          : "Este es un versículo de ejemplo para la referencia " + reference,
+        context: "Este versículo se encuentra en el contexto de...",
+      });
       setLoading(false);
-    }
-  };
+    }, 1000);
+  }, [reference, navigation]);
 
-  const checkIfBookmarked = async () => {
-    // Implement your bookmark checking logic
-    // For example, check AsyncStorage for bookmark data
-    try {
-      // Placeholder for actual bookmark checking
-      setIsBookmarked(false);
-    } catch (err) {
-      console.error('Error checking bookmark status:', err);
-    }
-  };
-
-  const toggleBookmark = async () => {
-    try {
-      // Implement your bookmark toggle logic
-      setIsBookmarked(!isBookmarked);
-      // Save to AsyncStorage or your database
-    } catch (err) {
-      console.error('Error toggling bookmark:', err);
-    }
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    // In a real app, you would save this to your bookmarks storage
   };
 
   const shareVerse = async () => {
-    if (!verse) return;
-    
     try {
       await Share.share({
-        message: `${reference}: "${verse.text}" - Shared from Bible App`,
+        message: `${verse.text} - ${verse.reference} (Reina-Valera 1960)`,
       });
-    } catch (err) {
-      console.error('Error sharing verse:', err);
+    } catch (error) {
+      alert(error.message);
     }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.loadingText}>Loading verse...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={fetchVerseDetails}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        <ActivityIndicator size="large" color="#d4af37" />
+        <Text style={styles.loadingText}>Cargando...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView style={styles.container}>
-      {verse ? (
-        <View style={styles.contentContainer}>
-          <Text style={styles.reference}>{reference}</Text>
-          <Text style={styles.verseText}>{verse.text}</Text>
-          
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={toggleBookmark}
-            >
-              <Ionicons 
-                name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                size={24} 
-                color="#3498db" 
-              />
-              <Text style={styles.actionText}>
-                {isBookmarked ? "Bookmarked" : "Bookmark"}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={shareVerse}
-            >
-              <Ionicons name="share-outline" size={24} color="#3498db" />
-              <Text style={styles.actionText}>Share</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('BibleReader', {
-                book: verse.book,
-                chapter: verse.chapter,
-                verse: verse.verseNumber
-              })}
-            >
-              <Ionicons name="book-outline" size={24} color="#3498db" />
-              <Text style={styles.actionText}>Read Chapter</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {verse.crossReferences && verse.crossReferences.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Cross References</Text>
-              {verse.crossReferences.map((ref, index) => (
-                <TouchableOpacity 
-                  key={`ref-${index}`}
-                  onPress={() => navigation.replace('VerseDetail', { reference: ref.reference })}
-                >
-                  <Text style={styles.crossReference}>{ref.reference}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-          
-          {verse.notes && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Study Notes</Text>
-              <Text style={styles.noteText}>{verse.notes}</Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <Text style={styles.notFoundText}>Verse not found</Text>
-      )}
+      <View style={styles.verseContainer}>
+        <Text style={styles.verseText}>{verse.text}</Text>
+        <Text style={styles.reference}>{verse.reference} (Reina-Valera 1960)</Text>
+      </View>
+      
+      <View style={styles.actionsContainer}>
+        <TouchableOpacity style={styles.actionButton} onPress={toggleBookmark}>
+          <Icon 
+            name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color="#d4af37" 
+          />
+          <Text style={styles.actionText}>
+            {isBookmarked ? "Guardado" : "Guardar"}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.actionButton} onPress={shareVerse}>
+          <Icon name="share-social-outline" size={24} color="#d4af37" />
+          <Text style={styles.actionText}>Compartir</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <View style={styles.contextContainer}>
+        <Text style={styles.contextTitle}>Contexto</Text>
+        <Text style={styles.contextText}>{verse.context}</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -179,96 +101,62 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: '#666',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  verseContainer: {
     padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#e74c3c',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#3498db',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  reference: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#2c3e50',
+    backgroundColor: '#f9f7f0',
+    borderRadius: 8,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   verseText: {
     fontSize: 18,
     lineHeight: 28,
-    marginBottom: 24,
-    color: '#34495e',
+    marginBottom: 16,
+    color: '#333',
+  },
+  reference: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'right',
+    fontStyle: 'italic',
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 16,
     padding: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   actionButton: {
     alignItems: 'center',
   },
   actionText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#3498db',
+    marginTop: 4,
+    color: '#666',
   },
-  section: {
-    marginTop: 24,
+  contextContainer: {
     padding: 16,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
   },
-  sectionTitle: {
+  contextTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#2c3e50',
+    marginBottom: 8,
+    color: '#4d2600',
   },
-  crossReference: {
-    fontSize: 16,
-    color: '#3498db',
-    padding: 8,
-    marginVertical: 4,
-    backgroundColor: '#ecf0f1',
-    borderRadius: 4,
-  },
-  noteText: {
+  contextText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#7f8c8d',
-  },
-  notFoundText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 40,
-    color: '#7f8c8d',
+    color: '#333',
   },
 });
 

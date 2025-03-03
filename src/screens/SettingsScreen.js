@@ -72,144 +72,25 @@ const SettingsScreen = () => {
   };
   
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1501139083538-0139583c060f?q=80&w=2070' }} 
-            style={styles.headerImage}
-          />
-          <View style={styles.overlay}>
-            <Text style={styles.headerText}>Settings</Text>
-          </View>
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Dark Mode</Text>
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: '#d0d0d0', true: '#81b0ff' }}
-              thumbColor={darkMode ? '#3498db' : '#f4f3f4'}
-            />
-          </View>
-          
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Font Size</Text>
-            <View style={styles.fontSizeButtons}>
-              <TouchableOpacity 
-                style={[styles.fontSizeButton, fontSize === 'small' && styles.selectedFontSize]}
-                onPress={() => setFontSize('small')}
-              >
-                <Text style={[styles.fontSizeText, fontSize === 'small' && styles.selectedFontText]}>Small</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.fontSizeButton, fontSize === 'medium' && styles.selectedFontSize]}
-                onPress={() => setFontSize('medium')}
-              >
-                <Text style={[styles.fontSizeText, fontSize === 'medium' && styles.selectedFontText]}>Medium</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.fontSizeButton, fontSize === 'large' && styles.selectedFontSize]}
-                onPress={() => setFontSize('large')}
-              >
-                <Text style={[styles.fontSizeText, fontSize === 'large' && styles.selectedFontText]}>Large</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Daily Verse</Text>
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: '#d0d0d0', true: '#81b0ff' }}
-              thumbColor={notifications ? '#3498db' : '#f4f3f4'}
-            />
-          </View>
-        </View>
-        
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bible Version</Text>
-          
-          <TouchableOpacity style={styles.versionItem}>
-            <Text style={styles.versionName}>English Standard Version (ESV)</Text>
-            <Text style={styles.versionSelected}>Selected</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.versionItem}>
-            <Text style={styles.versionName}>King James Version (KJV)</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.versionItem}>
-            <Text style={styles.versionName}>New International Version (NIV)</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-      
+    <ScrollView style={styles.container}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Bible Translation</Text>
-        <View style={{height: 300}}>
-          <FlatList
-            data={BIBLE_TRANSLATIONS}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={[
-                  styles.translationItem,
-                  currentTranslation.id === item.id && styles.selectedItem
-                ]}
-                onPress={() => handleSelectTranslation(item)}
-              >
-                <View>
-                  <Text style={styles.translationName}>{item.name}</Text>
-                  <Text style={styles.translationLanguage}>{item.language} • {item.abbreviation}</Text>
-                </View>
-                
-                {currentTranslation.id === item.id && (
-                  <Ionicons name="checkmark" size={24} color="#3498db" />
-                )}
-              </TouchableOpacity>
-            )}
-          />
+        <Text style={styles.sectionTitle}>Bible Version</Text>
+        <View style={styles.option}>
+          <Text style={styles.optionText}>Reina-Valera (1960)</Text>
+          <Text style={styles.activeIndicator}>✓</Text>
         </View>
+        <Text style={styles.noteText}>This app exclusively uses the Reina-Valera 1960 Spanish translation</Text>
       </View>
-      
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
-        
-        <TouchableOpacity style={styles.aboutItem}>
-          <Text style={styles.aboutItemText}>Privacy Policy</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.aboutItem}>
-          <Text style={styles.aboutItemText}>Terms of Service</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.aboutItem}>
-          <Text style={styles.aboutItemText}>App Version: 1.0.0</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <TouchableOpacity 
-        style={styles.actionButton}
-        onPress={verifyTranslations}
-        disabled={loading}
-      >
-        <Text style={styles.actionButtonText}>
-          {loading ? 'Checking...' : 'Verify Translations'}
+        <Text style={styles.aboutText}>
+          Bible App v1.0{'\n'}
+          A simple Bible application featuring the Reina-Valera Spanish translation.{'\n\n'}
+          © 2023 All Rights Reserved
         </Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -218,82 +99,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    height: 150,
-    position: 'relative',
-  },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
   section: {
     backgroundColor: 'white',
-    margin: 15,
-    marginBottom: 5,
-    borderRadius: 10,
-    padding: 15,
-    elevation: 2,
+    margin: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    shadowRadius: 1.41,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: 16,
   },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  settingLabel: {
-    fontSize: 16,
-    color: '#333',
-  },
-  fontSizeButtons: {
-    flexDirection: 'row',
-  },
-  fontSizeButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    marginLeft: 5,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  selectedFontSize: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
-  },
-  fontSizeText: {
-    color: '#333',
-  },
-  selectedFontText: {
-    color: 'white',
-  },
-  versionItem: {
+  option: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -301,53 +124,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  versionName: {
+  optionText: {
     fontSize: 16,
-    color: '#333',
   },
-  versionSelected: {
-    fontSize: 14,
-    color: '#3498db',
+  activeIndicator: {
+    color: '#2ecc71',
     fontWeight: 'bold',
   },
-  aboutItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  aboutItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  translationItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: 'white',
-  },
-  selectedItem: {
-    backgroundColor: '#e3f2fd',
-  },
-  translationName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  translationLanguage: {
+  noteText: {
+    marginTop: 16,
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
+    fontStyle: 'italic',
   },
-  actionButton: {
-    backgroundColor: '#3498db',
-    padding: 15,
-    borderRadius: 5,
-    alignItems: 'center',
-    margin: 15,
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  aboutText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#666',
   },
 });
 

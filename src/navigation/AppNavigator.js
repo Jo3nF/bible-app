@@ -1,114 +1,90 @@
 // src/navigation/AppNavigator.js
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
+import { View, ActivityIndicator } from 'react-native';
 
 // Import screens
+import LoginScreen from '../screens/LoginScreen';
+import AuthScreen from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
-import BibleReaderScreen from '../screens/BibleReaderScreen';
 import SearchScreen from '../screens/SearchScreen';
-import BookmarksScreen from '../screens/BookmarksScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import VerseDetailScreen from '../screens/VerseDetailScreen';
 import GuidanceScreen from '../screens/GuidanceScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import PsalmReaderScreen from '../screens/PsalmReaderScreen';
+import BibleReaderScreen from '../screens/BibleReaderScreen';
+import BookmarksScreen from '../screens/BookmarksScreen';
+import LoadingScreen from '../screens/LoadingScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
-const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
-// Stack navigators for each tab
-const HomeStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen 
-      name="HomeScreen" 
-      component={HomeScreen} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="BibleReader" 
-      component={BibleReaderScreen}
-      options={({ route }) => ({ 
-        title: `${route.params?.book || 'Bible'} ${route.params?.chapter || ''}`,
-        headerBackTitleVisible: false
-      })}
-    />
-  </Stack.Navigator>
-);
-
-const SearchStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen 
-      name="SearchScreen" 
-      component={SearchScreen} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="BibleReader" 
-      component={BibleReaderScreen}
-      options={({ route }) => ({ 
-        title: `${route.params?.book || 'Bible'} ${route.params?.chapter || ''}`,
-        headerBackTitleVisible: false
-      })}
-    />
-  </Stack.Navigator>
-);
-
-const BookmarksStack = () => (
-  <Stack.Navigator>
-    <Stack.Screen 
-      name="BookmarksScreen" 
-      component={BookmarksScreen} 
-      options={{ headerShown: false }}
-    />
-    <Stack.Screen 
-      name="BibleReader" 
-      component={BibleReaderScreen}
-      options={({ route }) => ({ 
-        title: `${route.params?.book || 'Bible'} ${route.params?.chapter || ''}`,
-        headerBackTitleVisible: false
-      })}
-    />
-  </Stack.Navigator>
-);
+const Tab = createBottomTabNavigator();
 
 // Main Tab Navigator
-const MainNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName;
+function MainTabNavigator() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Search') {
+            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Guidance') {
+            iconName = focused ? 'compass' : 'compass-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen name="Guidance" component={GuidanceScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
 
-        if (route.name === 'Home') {
-          iconName = focused ? 'home' : 'home-outline';
-        } else if (route.name === 'Search') {
-          iconName = focused ? 'search' : 'search-outline';
-        } else if (route.name === 'Bookmarks') {
-          iconName = focused ? 'bookmark' : 'bookmark-outline';
-        } else if (route.name === 'Settings') {
-          iconName = focused ? 'settings' : 'settings-outline';
-        } else if (route.name === 'Guidance') {
-          iconName = focused ? 'compass' : 'compass-outline';
-        }
+// App Navigator
+const AppNavigator = () => {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!user ? (
+        // Auth screens - Include Main here too for unauthenticated access
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Auth" component={AuthScreen} />
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen name="BibleReader" component={BibleReaderScreen} />
+          <Stack.Screen name="VerseDetail" component={VerseDetailScreen} />
+        </>
+      ) : (
+        // Main app screens
+        <>
+          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <Stack.Screen name="BibleReader" component={BibleReaderScreen} />
+          <Stack.Screen name="VerseDetail" component={VerseDetailScreen} />
+          <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="PsalmReader" component={PsalmReaderScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+};
 
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#3498db',
-      tabBarInactiveTintColor: 'gray',
-    })}
-  >
-    <Tab.Screen name="Home" component={HomeStack} />
-    <Tab.Screen name="Search" component={SearchStack} />
-    <Tab.Screen name="Bookmarks" component={BookmarksStack} />
-    <Tab.Screen name="Settings" component={SettingsScreen} />
-    <Tab.Screen 
-      name="Guidance" 
-      component={GuidanceScreen} 
-      options={{
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name="compass" color={color} size={size} />
-        ),
-      }}
-    />
-  </Tab.Navigator>
-);
-
-export default MainNavigator;
+export default AppNavigator;

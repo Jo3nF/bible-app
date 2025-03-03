@@ -1,197 +1,355 @@
 // src/screens/HomeScreen.js
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  StatusBar,
+  Dimensions
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const HomeScreen = ({ navigation }) => {
+// Get screen dimensions for responsive layout
+const { width } = Dimensions.get('window');
+
+// Gold theme colors
+const GOLD_PRIMARY = '#d4af37';
+const GOLD_SECONDARY = '#f2d27a';
+const GOLD_DARK = '#8b6b2e';
+const BROWN_TEXT = '#4d2600';
+
+const HomeScreen = () => {
+  const navigation = useNavigation();
+  const [dailyVerse, setDailyVerse] = useState({
+    reference: 'Juan 3:16',
+    text: '"Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna."',
+  });
+  
+  const [recentReadings, setRecentReadings] = useState([
+    {
+      id: '1',
+      reference: 'Salmos 23',
+      preview: 'Jehová es mi pastor...',
+      imageUrl: 'https://images.unsplash.com/photo-1575467678930-c7acd65d2c8e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      id: '2',
+      reference: 'Proverbios 3',
+      preview: 'Confía en Jehová con todo tu corazón...',
+      imageUrl: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+    },
+    {
+      id: '3',
+      reference: 'Filipenses 4',
+      preview: 'Regocijaos en el Señor siempre...',
+      imageUrl: 'https://images.unsplash.com/photo-1529568337823-d3f77818a613?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80',
+    },
+  ]);
+
+  const navigateToChapter = (reference) => {
+    navigation.navigate('VerseDetail', { reference });
+  };
+
+  const navigateToPsalm = () => {
+    navigation.navigate('PsalmReader');
+  };
+
+  const navigateToBookmarks = () => {
+    navigation.navigate('Bookmarks');
+  };
+
+  const navigateToReader = () => {
+    navigation.navigate('BibleReader');
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?q=80&w=2070' }} 
-          style={styles.headerImage}
-        />
-        <View style={styles.overlay}>
-          <Text style={styles.headerText}>Daily Verse</Text>
-          <Text style={styles.verseText}>
-            "For God so loved the world, that he gave his only Son, that whoever believes in him should not perish but have eternal life."
+    <>
+      <StatusBar barStyle="light-content" />
+      <ScrollView style={styles.container}>
+        {/* Header with Gold Pattern */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>
+            Reina-Valera
           </Text>
-          <Text style={styles.verseReference}>John 3:16</Text>
+          <Text style={styles.headerSubtitle}>
+            La Palabra de Dios
+          </Text>
         </View>
-      </View>
-      
-      <View style={styles.quickAccess}>
-        <Text style={styles.sectionTitle}>Quick Access</Text>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.quickButton}
-            onPress={() => navigation.navigate('BibleReader', { book: 'GEN', chapter: 1 })}
-          >
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1581600140682-79c5fe8828b6?q=80&w=1888' }} 
-              style={styles.buttonImage}
-            />
-            <Text style={styles.buttonText}>Read Genesis 1</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickButton}
-            onPress={() => navigation.navigate('BibleReader', { book: 'PSA', chapter: 23 })}
-          >
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1583361704493-d4d4d1b1d70a?q=80&w=1887' }} 
-              style={styles.buttonImage}
-            />
-            <Text style={styles.buttonText}>Read Psalm 23</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickButton}
-            onPress={() => navigation.navigate('Bookmarks')}
-          >
-            <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?q=80&w=2070' }} 
-              style={styles.buttonImage}
-            />
-            <Text style={styles.buttonText}>Bookmarks</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      <View style={styles.recentReading}>
-        <Text style={styles.sectionTitle}>Recent Reading</Text>
-        <TouchableOpacity 
-          style={styles.recentItem}
-          onPress={() => navigation.navigate('BibleReader', { book: 'Psalms', chapter: 23 })}
+
+        {/* Daily Verse with Background */}
+        <TouchableOpacity
+          onPress={() => navigateToChapter(dailyVerse.reference)}
+          activeOpacity={0.9}
         >
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073' }} 
-            style={styles.recentImage}
-          />
-          <View style={styles.recentInfo}>
-            <Text style={styles.recentTitle}>Psalms 23</Text>
-            <Text style={styles.recentSubtitle}>The Lord is my shepherd...</Text>
+          <View style={styles.dailyVerseContainer}>
+            <View style={styles.dailyVerseContent}>
+              <Text style={styles.dailyVerseTitle}>Versículo del Día</Text>
+              <Text style={styles.dailyVerseText}>{dailyVerse.text}</Text>
+              <View style={styles.dailyVerseReference}>
+                <Text style={styles.dailyVerseReferenceText}>
+                  {dailyVerse.reference}
+                </Text>
+              </View>
+            </View>
           </View>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.recentItem}
-          onPress={() => navigation.navigate('BibleReader', { book: 'Proverbs', chapter: 3 })}
-        >
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1499566727020-881da110a0b0?q=80&w=2070' }} 
-            style={styles.recentImage}
-          />
-          <View style={styles.recentInfo}>
-            <Text style={styles.recentTitle}>Proverbs 3</Text>
-            <Text style={styles.recentSubtitle}>Trust in the Lord with all your heart...</Text>
+
+        {/* Quick Access Section */}
+        <View style={styles.quickAccessContainer}>
+          <View style={styles.quickAccessHeader}>
+            <Text style={styles.quickAccessTitle}>Acceso Rápido</Text>
           </View>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+
+          <View style={styles.quickAccessContent}>
+            <TouchableOpacity
+              style={styles.quickAccessItem}
+              onPress={navigateToReader}
+            >
+              <View style={[styles.quickAccessImage, {backgroundColor: GOLD_PRIMARY, justifyContent: 'center', alignItems: 'center'}]}>
+                <Icon name="book" size={30} color="#fff" />
+              </View>
+              <View style={styles.quickAccessButton}>
+                <Text style={styles.quickAccessButtonText}>Leer</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickAccessItem}
+              onPress={navigateToPsalm}
+            >
+              <View style={[styles.quickAccessImage, {backgroundColor: GOLD_PRIMARY, justifyContent: 'center', alignItems: 'center'}]}>
+                <Icon name="musical-notes" size={30} color="#fff" />
+              </View>
+              <View style={styles.quickAccessButton}>
+                <Text style={styles.quickAccessButtonText}>Leer Salmo</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickAccessItem}
+              onPress={navigateToBookmarks}
+            >
+              <View style={[styles.quickAccessImage, {backgroundColor: GOLD_PRIMARY, justifyContent: 'center', alignItems: 'center'}]}>
+                <Icon name="bookmark" size={30} color="#fff" />
+              </View>
+              <View style={styles.quickAccessButton}>
+                <Text style={styles.quickAccessButtonText}>Marcadores</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Recent Reading Section */}
+        <View style={styles.recentContainer}>
+          <View style={styles.recentHeader}>
+            <Text style={styles.recentTitle}>Lectura Reciente</Text>
+          </View>
+
+          {recentReadings.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.recentItem}
+              onPress={() => navigateToChapter(item.reference)}
+            >
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.recentImage}
+              />
+              <View style={styles.recentContent}>
+                <Text style={styles.recentReference}>{item.reference}</Text>
+                <Text style={styles.recentPreview}>{item.preview}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Reina-Valera 1960</Text>
+        </View>
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
-    height: 200,
-    position: 'relative',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    backgroundColor: GOLD_PRIMARY,
   },
-  headerImage: {
-    width: '100%',
-    height: '100%',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: BROWN_TEXT,
+    textAlign: 'center',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+  headerSubtitle: {
+    fontSize: 16,
+    color: BROWN_TEXT,
+    marginTop: 5,
+  },
+  dailyVerseContainer: {
+    height: 230,
+    marginBottom: 20,
     padding: 20,
     justifyContent: 'center',
+    backgroundColor: GOLD_DARK,
   },
-  headerText: {
-    color: 'white',
-    fontSize: 22,
+  dailyVerseContent: {
+    width: '100%',
+  },
+  dailyVerseTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: GOLD_SECONDARY,
+    marginBottom: 12,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
-  verseText: {
-    color: 'white',
-    fontSize: 16,
-    fontStyle: 'italic',
-    marginBottom: 5,
-  },
-  verseReference: {
-    color: 'white',
-    fontSize: 14,
-    alignSelf: 'flex-end',
-  },
-  quickAccess: {
-    padding: 20,
-  },
-  sectionTitle: {
+  dailyVerseText: {
     fontSize: 18,
+    lineHeight: 26,
+    color: 'white',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
+  },
+  dailyVerseReference: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+  },
+  dailyVerseReferenceText: {
+    fontSize: 16,
+    color: GOLD_SECONDARY,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 5,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickButton: {
-    width: '30%',
-    height: 100,
+  quickAccessContainer: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: 'white',
     borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     overflow: 'hidden',
   },
-  buttonImage: {
-    width: '100%',
-    height: '70%',
+  quickAccessHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: GOLD_PRIMARY,
   },
-  buttonText: {
-    textAlign: 'center',
-    padding: 8,
-    backgroundColor: '#3498db',
-    color: 'white',
+  quickAccessTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
+    color: BROWN_TEXT,
   },
-  recentReading: {
-    padding: 20,
+  quickAccessContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  quickAccessItem: {
+    width: width / 3.8,
+    alignItems: 'center',
+  },
+  quickAccessImage: {
+    width: 60,
+    height: 60,
+    marginBottom: 10,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: GOLD_PRIMARY,
+  },
+  quickAccessButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    backgroundColor: GOLD_PRIMARY,
+  },
+  quickAccessButtonText: {
+    color: BROWN_TEXT,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  recentContainer: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  recentHeader: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: GOLD_PRIMARY,
+  },
+  recentTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: BROWN_TEXT,
   },
   recentItem: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   recentImage: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
   },
-  recentInfo: {
-    padding: 10,
+  recentContent: {
     flex: 1,
   },
-  recentTitle: {
-    fontWeight: 'bold',
+  recentReference: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: BROWN_TEXT,
     marginBottom: 5,
   },
-  recentSubtitle: {
-    color: '#666',
+  recentPreview: {
     fontSize: 14,
+    color: '#777',
+  },
+  footer: {
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: GOLD_PRIMARY,
+  },
+  footerText: {
+    color: BROWN_TEXT,
+    fontWeight: 'bold',
   },
 });
 
